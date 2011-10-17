@@ -32,9 +32,6 @@ class Answer < Comment
   has_many :comments, :foreign_key => "commentable_id", :class_name => "Comment", :order => "created_at asc", :dependent => :destroy
   has_many :notifications, :as => "reason", :dependent => :destroy
 
-  # This ought to be has_one, but it wasn't working
-  has_many :news_updates, :as => "entry", :dependent => :destroy
-
   validates_presence_of :user_id
   validates_presence_of :question_id
   validates_presence_of :search_result_id
@@ -44,9 +41,9 @@ class Answer < Comment
 
   validate :disallow_spam
 
-  after_create :create_news_update, :new_answer_notification,
+  after_create :new_answer_notification,
     :increment_user_topic_answers_count
-  before_destroy :unhide_news_update, :decrement_user_topic_answers_count
+  before_destroy :decrement_user_topic_answers_count
 
   ensure_index([[:user_id, 1], [:question_id, 1]])
 
@@ -173,25 +170,6 @@ class Answer < Comment
     end
   end
 
-  def create_news_update
-    NewsUpdate.create(:author => self.user, :entry => self,
-                      :created_at => self.created_at, :action => 'created')
-
-    hide_news_update
-  end
-  handle_asynchronously :create_news_update
-
-  def hide_news_update
-    self.question.news_update.hide!
-  end
-
-  def unhide_news_update
-    if self.question.news_update && self.question.answers_count == 1
-    # if this is the last question, reshow question's news_update
-      self.question.news_update.show!
-    end
-  end
-
   def new_answer_notification
     # Notify those who follow the question about the new answer,
     # except the creator of the answer and those who asked not to
@@ -227,12 +205,6 @@ class Answer < Comment
     end
   end
   handle_asynchronously :new_answer_notification
-
-  # Returns the (only) associated news update.
-  # We need this because has_one doesn't work.
-  def news_update
-    news_updates.first
-  end
 
   def increment_user_topic_answers_count
     UserTopicInfo.answer_added!(self)
