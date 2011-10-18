@@ -1226,7 +1226,7 @@ namespace :data do
       end
     end
 
-    desc "Update UserTopicInfo counts"
+    desc "Update question is_open flag"
     task :update_question_is_open_flag => :environment do
       Question.find_each do |q|
         print "-"
@@ -1237,5 +1237,21 @@ namespace :data do
         end
       end
     end
+
+    desc "Delete news items for answers"
+    task :delete_news_items_answer => :environment do
+      NewsUpdate.destroy_all(:entry_type => "Answer")
+    end
+
+    desc "Create news items for search results"
+    task :create_news_items_search_results => :environment do
+      SearchResult.find_each do |sr|
+        print '-'
+        if sr.news_update.nil?
+          sr.create_news_update
+        end
+      end
+    end
+
   end
 end
