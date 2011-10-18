@@ -32,6 +32,9 @@ class Answer < Comment
   has_many :comments, :foreign_key => "commentable_id", :class_name => "Comment", :order => "created_at asc", :dependent => :destroy
   has_many :notifications, :as => "reason", :dependent => :destroy
 
+  # This ought to be has_one, but it wasn't working
+  has_many :news_updates, :as => "entry", :dependent => :destroy
+
   validates_presence_of :user_id
   validates_presence_of :question_id
   validates_presence_of :search_result_id
@@ -205,6 +208,12 @@ class Answer < Comment
     end
   end
   handle_asynchronously :new_answer_notification
+
+  # Returns the (only) associated news update.
+  # We need this because has_one doesn't work.
+  def news_update
+    news_updates.first
+  end
 
   def increment_user_topic_answers_count
     UserTopicInfo.answer_added!(self)
